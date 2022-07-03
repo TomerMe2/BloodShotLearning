@@ -1,6 +1,11 @@
 import torch
+import torchvision
+import numpy as np
 from PIL import Image
 from glob import glob
+
+
+EXCLUDE_LBLS = {'KSC', 'LYA', 'MMZ', 'MOB'}
 
 class AMLDataset(torch.utils.data.Dataset):
 
@@ -14,9 +19,15 @@ class AMLDataset(torch.utils.data.Dataset):
     self._get_imgs_list()
     
   def _get_imgs_list(self):
-    self.imgs_paths = glob(self.path + '/*/*.tiff')
-    self.imgs_lbls = [path.split('/')[-1].split('_')[0] for path in self.imgs_paths]
-
+    imgs_paths = glob(self.path + '/*/*.tiff')
+    imgs_lbls = [path.split('/')[-1].split('_')[0] for path in imgs_paths]
+    
+    self.imgs_paths, self.imgs_lbls = [], []
+    for path, lbl in zip(imgs_paths, imgs_lbls):
+        if lbl not in EXCLUDE_LBLS:
+            self.imgs_paths.append(path)
+            self.imgs_lbls.append(lbl)
+        
     lbls_sorted = sorted(list(set(self.imgs_lbls)))
     self.num_classes = len(lbls_sorted)
     
