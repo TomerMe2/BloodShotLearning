@@ -6,25 +6,17 @@ import numpy as np
 
 from aml_dataset import AMLDataset
 from training_loop import TrainingLoop
+from utils import dataset_split
 
-train_part, val_part, test_part = 0.7, 0.1, 0.2
 INPUT_FOLDER = '../AML-Cytomorphology/AML-Cytomorphology'
 
 if __name__ == '__main__':
     aml_dataset = AMLDataset(INPUT_FOLDER) 
 
-    amount_of_samples_train = int(train_part * len(aml_dataset))
-    amount_of_samples_val = int(val_part * len(aml_dataset))
-    amount_of_samples_test = len(aml_dataset) - amount_of_samples_train - amount_of_samples_val
-    
-    print(amount_of_samples_train, amount_of_samples_val, amount_of_samples_test)
-
-    aml_train, aml_val, aml_test = torch.utils.data.random_split(aml_dataset,
-                                                                [amount_of_samples_train, amount_of_samples_val, amount_of_samples_test],
-                                                                generator=torch.Generator().manual_seed(42))
-
+    aml_train, aml_val, aml_test = dataset_split(aml_dataset)
     train_loader = torch.utils.data.DataLoader(aml_train, batch_size=32, num_workers=22)
     val_loader = torch.utils.data.DataLoader(aml_val, batch_size=32, num_workers=22)
+    test_loader = torch.utils.data.DataLoader(aml_test, batch_size=32, num_workers=22)
 
     backbone = torchvision.models.efficientnet_b0(pre_trained=False, num_classes=aml_dataset.num_classes)
     training_loop = TrainingLoop(backbone)
@@ -37,7 +29,6 @@ if __name__ == '__main__':
 
     trainer.fit(training_loop, train_loader, val_loader)
 
-    test_loader = torch.utils.data.DataLoader(aml_test, batch_size=32, num_workers=22)
 
     net = training_loop.backbone
     net = net.cuda()

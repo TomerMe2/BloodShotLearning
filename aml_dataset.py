@@ -15,11 +15,11 @@ class AMLDataset(torch.utils.data.Dataset):
 
     self.imgs_paths, self.imgs_lbls = None, None
     self.lbl_encoder, self.lbl_encoder_inverse = None, None
-    self.num_classes = None
+    self.num_classes, self.lbls_sorted = None, None
     self._get_imgs_list()
     
   def _get_imgs_list(self):
-    imgs_paths = glob(self.path + '/*/*.tiff')
+    imgs_paths = sorted(glob(self.path + '/*/*.tiff'))
     imgs_lbls = [path.split('/')[-1].split('_')[0] for path in imgs_paths]
     
     self.imgs_paths, self.imgs_lbls = [], []
@@ -28,11 +28,11 @@ class AMLDataset(torch.utils.data.Dataset):
             self.imgs_paths.append(path)
             self.imgs_lbls.append(lbl)
         
-    lbls_sorted = sorted(list(set(self.imgs_lbls)))
-    self.num_classes = len(lbls_sorted)
+    self.lbls_sorted = sorted(list(set(self.imgs_lbls)))
+    self.num_classes = len(self.lbls_sorted)
     
-    self.lbl_encoder = {lbl: idx for idx, lbl in enumerate(lbls_sorted)}
-    self.lbl_encoder_inverse = {idx: lbl for idx, lbl in enumerate(lbls_sorted)}
+    self.lbl_encoder = {lbl: idx for idx, lbl in enumerate(self.lbls_sorted)}
+    self.lbl_encoder_inverse = {idx: lbl for idx, lbl in enumerate(self.lbls_sorted)}
 
     self.imgs_lbls = [self.lbl_encoder[lbl] for lbl in self.imgs_lbls]
 
