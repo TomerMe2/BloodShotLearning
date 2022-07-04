@@ -1,3 +1,5 @@
+import torch
+
 def dataset_split(dataset):
     train_part, val_part, test_part = 0.7, 0.1, 0.2
 

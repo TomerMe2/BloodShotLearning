@@ -4,7 +4,7 @@ import torchvision
 from sklearn.metrics import classification_report
 import numpy as np
 
-from aml_dataset import AMLDataset
+from datasets.aml_dataset import AMLDataset
 from training_loop import TrainingLoop
 from utils import dataset_split
 
