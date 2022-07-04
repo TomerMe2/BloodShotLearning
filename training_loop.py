@@ -11,7 +11,7 @@ class TrainingLoop(pl.LightningModule):
     self.loss = torch.nn.CrossEntropyLoss()
     self.train_acc = torchmetrics.Accuracy()
     self.val_acc = torchmetrics.Accuracy()
-    self.save_hyperparameters(ignore=['backbone'])
+    self.save_hyperparameters()
 
   def configure_optimizers(self):
     optimizer = torch.optim.Adam(self.parameters())
