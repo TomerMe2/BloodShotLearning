@@ -5,10 +5,20 @@ from sklearn.metrics import classification_report
 
 from datasets.c_nmc_leukemia_dataset import CNmcLeukemiaTrainingDataset, CNmcLeukemiaTestingDataset
 from training_loop import TrainingLoop
+from training_loop_metrics_learning import TrainingLoopMetricLearning
+from training_loop_metric_learning_consistent_loss import TrainingLoopMetricLearningConsistentLoss
+from datasets.aml_dataset import AMLDataset
+from utils import dataset_split
+
 
 
 # CHECKPOINT_PATH = 'logs/init/version_12/checkpoints/epoch=8-step=3609.ckpt'
-CHECKPOINT_PATH = 'logs/init/version_14/checkpoints/epoch=0-step=401.ckpt'
+#CHECKPOINT_PATH = 'logs/init/version_15/checkpoints/epoch=4-step=2005.ckpt'
+
+#CHECKPOINT_PATH = 'logs/sub_center_arcface_loss/version_2/checkpoints/epoch=4-step=2005.ckpt'
+# CHECKPOINT_PATH = 'logs/arcface_loss_mobilenet_v3_pretrained/version_0/checkpoints/epoch=3-step=1604.ckpt'
+CHECKPOINT_PATH = 'logs/arcface_loss_mobilenet_v3_consistent_loss/version_1/checkpoints/epoch=4-step=2005.ckpt'
+
 TRAIN_DATASET_PATH = '../C-NMC-Leukemia/C-NMC_Leukemia/C-NMC_training_data/fold_0'
 TEST_DATASET_PATH = '../C-NMC-Leukemia/C-NMC_Leukemia/C-NMC_test_prelim_phase_data'
 
@@ -69,13 +79,6 @@ def classify_with_representative_emb(test_dataset, model, representative_embs, r
 
     print(classification_report(true_lbls, predictions))
 
-    print('predict all on everything')
-    predictions = np.array(['all'] * len(predictions))
-    print(classification_report(true_lbls, predictions))
-
-
-
-        
 
 def k_shot(k, model, train_dataset, test_dataset):
     # k needs to be lower than batch size. k images should fit in the GPU.
@@ -85,12 +88,18 @@ def k_shot(k, model, train_dataset, test_dataset):
 
 
 if __name__ == '__main__':
-    model = TrainingLoop.load_from_checkpoint(CHECKPOINT_PATH)
+    #model = TrainingLoop.load_from_checkpoint(CHECKPOINT_PATH)
+    # model = TrainingLoopMetricLearning.load_from_checkpoint(CHECKPOINT_PATH)
+    model = TrainingLoopMetricLearningConsistentLoss.load_from_checkpoint(CHECKPOINT_PATH)
     model = model.backbone.cuda()
     model = model.eval()
 
     memorizing_dataset = CNmcLeukemiaTrainingDataset(TRAIN_DATASET_PATH)
     testing_dataset = CNmcLeukemiaTestingDataset(TEST_DATASET_PATH)
+    
+    #memorizing_dataset = AMLDataset('../AML-Cytomorphology/AML-Cytomorphology') 
+    #testing_dataset = AMLDataset('../AML-Cytomorphology/AML-Cytomorphology') 
+    # _, memorizing_dataset, testing_dataset = dataset_split(aml_dataset)
 
     k_shot(10, model, memorizing_dataset, testing_dataset)
    
