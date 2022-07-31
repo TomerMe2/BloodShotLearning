@@ -1,7 +1,9 @@
+from pprint import pprint
 import numpy as np
 import torch
 from sklearn.metrics.pairwise import cosine_similarity
 from sklearn.metrics import classification_report
+from tqdm import tqdm
 
 from datasets.c_nmc_leukemia_dataset import CNmcLeukemiaTrainingDataset, CNmcLeukemiaTestingDataset
 from training_loop import TrainingLoop
@@ -25,10 +27,10 @@ from utils import dataset_split
 #CHECKPOINT_PATH = 'logs/aam_softmax_mobilenet_v3/version_1/checkpoints/epoch=19-step=8020.ckpt'
 #CHECKPOINT_PATH = 'logs/aam_softmax_with_logits_mobilenet_v3/version_2/checkpoints/epoch=28-step=11629.ckpt'
 #CHECKPOINT_PATH = 'logs/aam_softmax_with_logits_mobilenet_v3/version_3/checkpoints/epoch=13-step=5614.ckpt'   # for the fallback with arcface loss
-#CHECKPOINT_PATH = 'logs/subcenter_1_center_mobilenet_v3_consistency_mult_1/version_0/checkpoints/epoch=3-step=1604.ckpt'
+CHECKPOINT_PATH = 'logs/subcenter_1_center_mobilenet_v3_consistency_mult_1/version_0/checkpoints/epoch=5-step=2406.ckpt'
 #CHECKPOINT_PATH = 'logs/arcface_loss_mobilenet_v3_consistency_mult_1/version_0/checkpoints/epoch=3-step=1604.ckpt'
 #CHECKPOINT_PATH = 'logs/arcface_loss_mobilenet_v3_consistency_mult_1/version_1/checkpoints/epoch=6-step=2807.ckpt'
-CHECKPOINT_PATH = 'logs/subcenter_1_arcface_mobilenet_v3_consistency_mult_20/version_0/checkpoints/epoch=4-step=2005.ckpt'
+#CHECKPOINT_PATH = 'logs/subcenter_1_arcface_mobilenet_v3_consistency_mult_20/version_0/checkpoints/epoch=4-step=2005.ckpt'
 
 TRAIN_DATASET_PATH = '../C-NMC-Leukemia/C-NMC_Leukemia/C-NMC_training_data/fold_0'
 TEST_DATASET_PATH = '../C-NMC-Leukemia/C-NMC_Leukemia/C-NMC_test_prelim_phase_data'
@@ -90,18 +92,53 @@ def classify_with_representative_emb(test_dataset, model, representative_embs, r
     predictions = np.array(predictions)
     true_lbls = np.array([test_dataset.lbl_encoder_inverse[lbl] for lbl in true_lbls])
 
-    print(classification_report(true_lbls, predictions))
+    metrics_dct = classification_report(true_lbls, predictions, output_dict=True)
+    # we don't care about macro avg, only about weighted avg
+    del metrics_dct['macro avg']
+    
+    return metrics_dct
 
 
-def classify_with_embs_themselves(train_dataset, test_dataset, model, samples_idxs_for_memorizing):
-    pass
+def reduce_multiple_metrics_dcts(metrics_dcts):
+    new_metrics_dct = {}
+    
+    # all the dcts have the same entries
+    for key in metrics_dcts[0].keys():
+        
+        if key == 'accuracy':
+            # accuracy is not a dict, it has a single value
+            acc_values = [metric_dct[key] for metric_dct in metrics_dcts]
 
-def k_shot(k, model, train_dataset, test_dataset):
+            new_metrics_dct[key] = {}
+            new_metrics_dct[key]['mean'] = np.mean(acc_values)
+            new_metrics_dct[key]['std'] = np.std(acc_values)
+            
+        else:
+            new_metrics_dct[key] = {}
+        
+            for metric_nm in metrics_dcts[0][key].keys():
+                metric_values = [metric_dct[key][metric_nm] for metric_dct in metrics_dcts]
+                
+                new_metrics_dct[key][metric_nm] = {}
+                new_metrics_dct[key][metric_nm]['mean'] = np.mean(metric_values)
+                new_metrics_dct[key][metric_nm]['std'] = np.std(metric_values)
+
+    return new_metrics_dct
+
+
+def k_shot(k, model, train_dataset, test_dataset, num_of_evals=100, seed=42):
     # k needs to be lower than batch size. k images should fit in the GPU.
-    samples_idxs_for_memorizing = gather_k_examples(k, train_dataset)
-    representative_embs, rep_embs_lbls = generate_embeddings_with_mean(samples_idxs_for_memorizing, train_dataset, model)
-    classify_with_representative_emb(test_dataset, model, representative_embs, rep_embs_lbls)
-
+    rng = np.random.default_rng(seed)
+    
+    metrics_dcts = []
+    for eval_idx in tqdm(range(num_of_evals)):
+        samples_idxs_for_memorizing = gather_k_examples(k, train_dataset, rng)
+        representative_embs, rep_embs_lbls = generate_embeddings_with_mean(samples_idxs_for_memorizing, train_dataset, model)
+        metrics_dct = classify_with_representative_emb(test_dataset, model, representative_embs, rep_embs_lbls)
+        metrics_dcts.append(metrics_dct)
+    
+    final_metric_dct = reduce_multiple_metrics_dcts(metrics_dcts)
+    pprint(final_metric_dct)
 
 if __name__ == '__main__':
     #model = TrainingLoop.load_from_checkpoint(CHECKPOINT_PATH)
@@ -122,9 +159,3 @@ if __name__ == '__main__':
     # _, memorizing_dataset, testing_dataset = dataset_split(aml_dataset)
 
     k_shot(10, model, memorizing_dataset, testing_dataset)
-   
-
-
-    
-
-
