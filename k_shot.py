@@ -7,6 +7,10 @@ from datasets.c_nmc_leukemia_dataset import CNmcLeukemiaTrainingDataset, CNmcLeu
 from training_loop import TrainingLoop
 from training_loop_metrics_learning import TrainingLoopMetricLearning
 from training_loop_metric_learning_consistent_loss import TrainingLoopMetricLearningConsistentLoss
+from training_loop_aamsoftmax import TrainingLoopAAMSoftmax
+from training_loop_aamsoftmax_with_logits import TrainingLoopAAMSoftmaxWithLogits
+from fallback_training_loop import FallbackTrainingLoop
+from training_loop_metric_learning_consistent_loss_arcface_loss import TrainingLoopMetricLearningConsistentLossArcfaceLoss
 from datasets.aml_dataset import AMLDataset
 from utils import dataset_split
 
@@ -16,8 +20,15 @@ from utils import dataset_split
 #CHECKPOINT_PATH = 'logs/init/version_15/checkpoints/epoch=4-step=2005.ckpt'
 
 #CHECKPOINT_PATH = 'logs/sub_center_arcface_loss/version_2/checkpoints/epoch=4-step=2005.ckpt'
-# CHECKPOINT_PATH = 'logs/arcface_loss_mobilenet_v3_pretrained/version_0/checkpoints/epoch=3-step=1604.ckpt'
-CHECKPOINT_PATH = 'logs/arcface_loss_mobilenet_v3_consistent_loss/version_1/checkpoints/epoch=4-step=2005.ckpt'
+#CHECKPOINT_PATH = 'logs/arcface_loss_mobilenet_v3_pretrained/version_0/checkpoints/epoch=3-step=1604.ckpt'
+#CHECKPOINT_PATH = 'logs/arcface_loss_mobilenet_v3_consistent_loss/version_1/checkpoints/epoch=4-step=2005.ckpt'
+#CHECKPOINT_PATH = 'logs/aam_softmax_mobilenet_v3/version_1/checkpoints/epoch=19-step=8020.ckpt'
+#CHECKPOINT_PATH = 'logs/aam_softmax_with_logits_mobilenet_v3/version_2/checkpoints/epoch=28-step=11629.ckpt'
+#CHECKPOINT_PATH = 'logs/aam_softmax_with_logits_mobilenet_v3/version_3/checkpoints/epoch=13-step=5614.ckpt'   # for the fallback with arcface loss
+#CHECKPOINT_PATH = 'logs/subcenter_1_center_mobilenet_v3_consistency_mult_1/version_0/checkpoints/epoch=3-step=1604.ckpt'
+#CHECKPOINT_PATH = 'logs/arcface_loss_mobilenet_v3_consistency_mult_1/version_0/checkpoints/epoch=3-step=1604.ckpt'
+#CHECKPOINT_PATH = 'logs/arcface_loss_mobilenet_v3_consistency_mult_1/version_1/checkpoints/epoch=6-step=2807.ckpt'
+CHECKPOINT_PATH = 'logs/subcenter_1_arcface_mobilenet_v3_consistency_mult_20/version_0/checkpoints/epoch=4-step=2005.ckpt'
 
 TRAIN_DATASET_PATH = '../C-NMC-Leukemia/C-NMC_Leukemia/C-NMC_training_data/fold_0'
 TEST_DATASET_PATH = '../C-NMC-Leukemia/C-NMC_Leukemia/C-NMC_test_prelim_phase_data'
@@ -80,6 +91,9 @@ def classify_with_representative_emb(test_dataset, model, representative_embs, r
     print(classification_report(true_lbls, predictions))
 
 
+def classify_with_embs_themselves(train_dataset, test_dataset, model, samples_idxs_for_memorizing):
+    pass
+
 def k_shot(k, model, train_dataset, test_dataset):
     # k needs to be lower than batch size. k images should fit in the GPU.
     samples_idxs_for_memorizing = gather_k_examples(k, train_dataset)
@@ -89,8 +103,12 @@ def k_shot(k, model, train_dataset, test_dataset):
 
 if __name__ == '__main__':
     #model = TrainingLoop.load_from_checkpoint(CHECKPOINT_PATH)
-    # model = TrainingLoopMetricLearning.load_from_checkpoint(CHECKPOINT_PATH)
-    model = TrainingLoopMetricLearningConsistentLoss.load_from_checkpoint(CHECKPOINT_PATH)
+    #model = TrainingLoopMetricLearning.load_from_checkpoint(CHECKPOINT_PATH)
+    #model = TrainingLoopMetricLearningConsistentLoss.load_from_checkpoint(CHECKPOINT_PATH)
+    # model = TrainingLoopAAMSoftmax.load_from_checkpoint(CHECKPOINT_PATH)
+    #model = TrainingLoopAAMSoftmaxWithLogits.load_from_checkpoint(CHECKPOINT_PATH)
+    #model = FallbackTrainingLoop.load_from_checkpoint(CHECKPOINT_PATH)
+    model = TrainingLoopMetricLearningConsistentLossArcfaceLoss.load_from_checkpoint(CHECKPOINT_PATH)
     model = model.backbone.cuda()
     model = model.eval()
 

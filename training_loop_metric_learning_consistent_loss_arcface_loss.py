@@ -4,14 +4,13 @@ import torchmetrics
 from pytorch_metric_learning import losses
 from torchvision.transforms.functional import rotate
 
-class TrainingLoopMetricLearningConsistentLoss(pl.LightningModule):
+class TrainingLoopMetricLearningConsistentLossArcfaceLoss(pl.LightningModule):
 
-  def __init__(self, backbone, num_classes, consistent_loss_multiplier=20, sub_centers=1):
+  def __init__(self, backbone, num_classes, consistent_loss_multiplier=20):
     super().__init__()
     self.backbone = backbone
     self.consistent_loss_multiplier = consistent_loss_multiplier
-    self.loss = losses.SubCenterArcFaceLoss(num_classes=num_classes,
-                                            embedding_size=576, sub_centers=sub_centers)
+    self.loss = losses.ArcFaceLoss(num_classes=num_classes, embedding_size=576)
     self.mse_loss = torch.nn.MSELoss()
     self.train_acc = torchmetrics.Accuracy()
     self.val_acc = torchmetrics.Accuracy()

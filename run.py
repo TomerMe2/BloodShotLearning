@@ -8,6 +8,10 @@ from datasets.aml_dataset import AMLDataset
 from training_loop import TrainingLoop
 from training_loop_metrics_learning import TrainingLoopMetricLearning
 from training_loop_metric_learning_consistent_loss import TrainingLoopMetricLearningConsistentLoss
+from training_loop_aamsoftmax import TrainingLoopAAMSoftmax
+from training_loop_aamsoftmax_with_logits import TrainingLoopAAMSoftmaxWithLogits
+from fallback_training_loop import FallbackTrainingLoop
+from training_loop_metric_learning_consistent_loss_arcface_loss import TrainingLoopMetricLearningConsistentLossArcfaceLoss
 from utils import dataset_split
 
 INPUT_FOLDER = '../AML-Cytomorphology/AML-Cytomorphology'
@@ -23,8 +27,14 @@ if __name__ == '__main__':
     backbone = torchvision.models.mobilenet_v3_small(pre_trained=False, num_classes=aml_dataset.num_classes)
     # training_loop = TrainingLoop(backbone)
     # training_loop = TrainingLoopMetricLearning(backbone, aml_dataset.num_classes, sub_centers=1)
-    training_loop = TrainingLoopMetricLearningConsistentLoss(backbone, aml_dataset.num_classes)
-    logger = pl.loggers.CSVLogger("logs", name="arcface_loss_mobilenet_v3_consistent_loss_amp")
+    #training_loop = TrainingLoopMetricLearningConsistentLoss(backbone, aml_dataset.num_classes, consistent_loss_multiplier=1)
+    #training_loop = TrainingLoopAAMSoftmax(backbone, aml_dataset.num_classes)
+    #training_loop = TrainingLoopAAMSoftmaxWithLogits(backbone, aml_dataset.num_classes)
+    #training_loop = FallbackTrainingLoop(backbone, aml_dataset.num_classes)
+    #training_loop = TrainingLoopMetricLearningConsistentLossArcfaceLoss(backbone, aml_dataset.num_classes, consistent_loss_multiplier=1)
+    training_loop = TrainingLoopMetricLearningConsistentLoss(backbone, aml_dataset.num_classes, consistent_loss_multiplier=20)
+
+    logger = pl.loggers.CSVLogger("logs", name="subcenter_1_arcface_mobilenet_v3_consistency_mult_20")
     checkpoint_callback = pl.callbacks.ModelCheckpoint(monitor="val_loss")
     # early_stopping_callback = pl.callbacks.EarlyStopping(monitor="val_loss", mode="min")
     #trainer = pl.Trainer(callbacks=[checkpoint_callback, early_stopping_callback],
@@ -32,7 +42,6 @@ if __name__ == '__main__':
     trainer = pl.Trainer(callbacks=[checkpoint_callback],
                          gpus=1, max_epochs=30, num_sanity_val_steps=0, logger=logger)
     trainer.fit(training_loop, train_loader, val_loader)
-
 
     net = training_loop.backbone
     net = net.cuda()
