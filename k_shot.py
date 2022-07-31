@@ -41,8 +41,10 @@ def get_embs_in_efficient_net(model, x):
 
     return x
 
-def gather_k_examples(k, train_dataset):
-    rng = np.random.default_rng(42)
+def gather_k_examples(k, train_dataset, rng=None):
+    
+    if rng is None:
+        rng = np.random.default_rng(42)
     
     samples_idxs_for_memorizing = {}  # dict of lbl_name -> list of indices in dataset
     for lbl in train_dataset.lbls_sorted:
