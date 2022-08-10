@@ -54,10 +54,11 @@ class Dataset(torch.utils.data.Dataset, ABC):
 
     im = Image.open(path) 
     im = im.resize((224, 224))   # for models built for imagenet
-    im = np.array(im)
-    im = im[:, :, :3]   # remove the 4th channel
 
     if self.transform:
       im = self.transform(im)
+    
+    im = np.array(im)
+    im = im[:, :, :3]   # remove the 4th channel
 
     return torchvision.transforms.ToTensor()(im), lbl

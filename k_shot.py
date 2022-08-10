@@ -1,3 +1,5 @@
+import argparse
+import os
 from pprint import pprint
 import numpy as np
 import torch
@@ -6,44 +8,21 @@ from sklearn.metrics import classification_report
 from tqdm import tqdm
 
 from datasets.c_nmc_leukemia_dataset import CNmcLeukemiaTrainingDataset, CNmcLeukemiaTestingDataset
-from training_loop import TrainingLoop
-from training_loop_metrics_learning import TrainingLoopMetricLearning
-from training_loop_metric_learning_consistent_loss import TrainingLoopMetricLearningConsistentLoss
-from training_loop_aamsoftmax import TrainingLoopAAMSoftmax
-from training_loop_aamsoftmax_with_logits import TrainingLoopAAMSoftmaxWithLogits
-from fallback_training_loop import FallbackTrainingLoop
-from training_loop_metric_learning_consistent_loss_arcface_loss import TrainingLoopMetricLearningConsistentLossArcfaceLoss
-from datasets.aml_dataset import AMLDataset
-from utils import dataset_split
+from utils import get_train_loop_cls_ref
 
+"""
+This file will run a k-shot evaluation of a trained model.
+Example for a command:
+python k_shot.py --k 10 --train-loop AAMSoftmaxConsistency --checkpoint-path aam_softmax_consistency_model.ckpt
+"""
 
-
-# CHECKPOINT_PATH = 'logs/init/version_12/checkpoints/epoch=8-step=3609.ckpt'
-#CHECKPOINT_PATH = 'logs/init/version_15/checkpoints/epoch=4-step=2005.ckpt'
-
-#CHECKPOINT_PATH = 'logs/sub_center_arcface_loss/version_2/checkpoints/epoch=4-step=2005.ckpt'
-#CHECKPOINT_PATH = 'logs/arcface_loss_mobilenet_v3_pretrained/version_0/checkpoints/epoch=3-step=1604.ckpt'
-#CHECKPOINT_PATH = 'logs/arcface_loss_mobilenet_v3_consistent_loss/version_1/checkpoints/epoch=4-step=2005.ckpt'
-#CHECKPOINT_PATH = 'logs/aam_softmax_mobilenet_v3/version_1/checkpoints/epoch=19-step=8020.ckpt'
-#CHECKPOINT_PATH = 'logs/aam_softmax_with_logits_mobilenet_v3/version_2/checkpoints/epoch=28-step=11629.ckpt'
-#CHECKPOINT_PATH = 'logs/aam_softmax_with_logits_mobilenet_v3/version_3/checkpoints/epoch=13-step=5614.ckpt'   # for the fallback with arcface loss
-CHECKPOINT_PATH = 'logs/subcenter_1_center_mobilenet_v3_consistency_mult_1/version_0/checkpoints/epoch=5-step=2406.ckpt'
-#CHECKPOINT_PATH = 'logs/arcface_loss_mobilenet_v3_consistency_mult_1/version_0/checkpoints/epoch=3-step=1604.ckpt'
-#CHECKPOINT_PATH = 'logs/arcface_loss_mobilenet_v3_consistency_mult_1/version_1/checkpoints/epoch=6-step=2807.ckpt'
-#CHECKPOINT_PATH = 'logs/subcenter_1_arcface_mobilenet_v3_consistency_mult_20/version_0/checkpoints/epoch=4-step=2005.ckpt'
-
-TRAIN_DATASET_PATH = '../C-NMC-Leukemia/C-NMC_Leukemia/C-NMC_training_data/fold_0'
-TEST_DATASET_PATH = '../C-NMC-Leukemia/C-NMC_Leukemia/C-NMC_test_prelim_phase_data'
-
-# TODO: make it nicer
-def get_embs_in_efficient_net(model, x):
-    x = model.features(x)
-    x = model.avgpool(x)
-    x = torch.flatten(x, 1)
-
-    return x
 
 def gather_k_examples(k, train_dataset, rng=None):
+    """
+    Gather k examples from each class from train_dataset using rng random generator.
+    Useful for gathering k images in the memorizing phase.
+    Returns a dict that maps from label names into list of indices in the dataset.
+    """
     
     if rng is None:
         rng = np.random.default_rng(42)
@@ -57,14 +36,19 @@ def gather_k_examples(k, train_dataset, rng=None):
     return samples_idxs_for_memorizing
 
 
-def generate_embeddings_with_mean(samples_idxs_for_memorizing, train_dataset, model):
+def generated_mean_embedding_per_class(samples_idxs_for_memorizing, train_dataset, model):
+    """
+    samples_idxs_for_memorizing should be a dict that maps from label names into list of indices in the dataset.
+    Returns a tuple in which the first item is a matrix in size of (n_classes, emb_size)
+    and the second item is a np array the dictates the labels of each embedding in the first item.
+    """
     
     representative_embs, rep_embs_lbls = [], []
     for lbl, idxs in samples_idxs_for_memorizing.items():
         samples = torch.stack([train_dataset[idx][0] for idx in idxs]).cuda()
         
         with torch.no_grad():
-            embs = get_embs_in_efficient_net(model, samples)
+            embs = model.get_embs(samples)
         
         representative_embs.append(embs.mean(dim=0).cpu())
         rep_embs_lbls.append(lbl)
@@ -82,7 +66,7 @@ def classify_with_representative_emb(test_dataset, model, representative_embs, r
         x = x.cuda()
 
         with torch.no_grad():
-            embs = get_embs_in_efficient_net(model, x).cpu().numpy()
+            embs = model.get_embs(x).cpu().numpy()
         
         idxs_of_lbls = cosine_similarity(embs, representative_embs).argmax(axis=1)
         pred_lbls = rep_embs_lbls[idxs_of_lbls]
@@ -126,36 +110,48 @@ def reduce_multiple_metrics_dcts(metrics_dcts):
     return new_metrics_dct
 
 
-def k_shot(k, model, train_dataset, test_dataset, num_of_evals=100, seed=42):
-    # k needs to be lower than batch size. k images should fit in the GPU.
+def k_shot(k, model, train_dataset, test_dataset, num_of_evals, seed=42):
+    # k images should fit in the GPU.
     rng = np.random.default_rng(seed)
     
     metrics_dcts = []
     for eval_idx in tqdm(range(num_of_evals)):
         samples_idxs_for_memorizing = gather_k_examples(k, train_dataset, rng)
-        representative_embs, rep_embs_lbls = generate_embeddings_with_mean(samples_idxs_for_memorizing, train_dataset, model)
+        representative_embs, rep_embs_lbls = generated_mean_embedding_per_class(samples_idxs_for_memorizing,
+                                                                                train_dataset, model)
         metrics_dct = classify_with_representative_emb(test_dataset, model, representative_embs, rep_embs_lbls)
         metrics_dcts.append(metrics_dct)
     
     final_metric_dct = reduce_multiple_metrics_dcts(metrics_dcts)
-    pprint(final_metric_dct)
+    return final_metric_dct
+
+
+def get_arg_parser():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--k', type=int,
+                        help='Number of memorizing image per evaluation')
+    parser.add_argument('--train-loop', type=str, 
+                        help='The training loop that the model was trained with. Can be softmax or AAMSoftmax or AAMSoftmaxConsistency')
+    parser.add_argument('--checkpoint-path', type=str,
+                        help='Path to the ckpt file that contains the weights')
+    parser.add_argument('--all-dataset-path', 
+                        default='../C-NMC-Leukemia/C-NMC_Leukemia',
+                        type=str, help='Path to the unzipped ALL dataset')
+    parser.add_argument('--number-of-evals', default=100, type=int,
+                        help='Number of times that we pick memorizing images and evaluate the model using them')
+    return parser
+
 
 if __name__ == '__main__':
-    #model = TrainingLoop.load_from_checkpoint(CHECKPOINT_PATH)
-    #model = TrainingLoopMetricLearning.load_from_checkpoint(CHECKPOINT_PATH)
-    #model = TrainingLoopMetricLearningConsistentLoss.load_from_checkpoint(CHECKPOINT_PATH)
-    # model = TrainingLoopAAMSoftmax.load_from_checkpoint(CHECKPOINT_PATH)
-    #model = TrainingLoopAAMSoftmaxWithLogits.load_from_checkpoint(CHECKPOINT_PATH)
-    #model = FallbackTrainingLoop.load_from_checkpoint(CHECKPOINT_PATH)
-    model = TrainingLoopMetricLearningConsistentLossArcfaceLoss.load_from_checkpoint(CHECKPOINT_PATH)
-    model = model.backbone.cuda()
-    model = model.eval()
-
-    memorizing_dataset = CNmcLeukemiaTrainingDataset(TRAIN_DATASET_PATH)
-    testing_dataset = CNmcLeukemiaTestingDataset(TEST_DATASET_PATH)
+    parser = get_arg_parser()
+    args = parser.parse_args()
+    train_loop_cls_ref = get_train_loop_cls_ref(args.train_loop)
     
-    #memorizing_dataset = AMLDataset('../AML-Cytomorphology/AML-Cytomorphology') 
-    #testing_dataset = AMLDataset('../AML-Cytomorphology/AML-Cytomorphology') 
-    # _, memorizing_dataset, testing_dataset = dataset_split(aml_dataset)
+    model = train_loop_cls_ref.load_from_checkpoint(args.checkpoint_path)
+    model = model.cuda()
+    model = model.eval()
+    
+    memorizing_dataset = CNmcLeukemiaTrainingDataset(os.path.join(args.all_dataset_path, 'C-NMC_training_data', 'fold_0'))
+    testing_dataset = CNmcLeukemiaTestingDataset(os.path.join(args.all_dataset_path, 'C-NMC_test_prelim_phase_data'))
 
-    k_shot(10, model, memorizing_dataset, testing_dataset)
+    pprint(k_shot(args.k, model, memorizing_dataset, testing_dataset, args.number_of_evals))
