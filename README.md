@@ -9,8 +9,8 @@ In the evaluation of this project we used 10 images per class.
 
 ## Datasets
 The dataset that we can fully use is [A Single-cell Morphological Dataset of Leukocytes from AML Patients
-and Non-malignant Controls” (AML for short)](https://wiki.cancerimagingarchive.net/pages/viewpage.action?pageId=61080958). <br/>
-The dataset that we will have an access only to few images from its train dataset is [ALL Challenge dataset of ISBI 2019" (ALL challenge for short)](https://wiki.cancerimagingarchive.net/pages/viewpage.action?pageId=52758223)
+and Non-malignant Controls](https://wiki.cancerimagingarchive.net/pages/viewpage.action?pageId=61080958). (AML for short)<br/>
+The dataset that we will have an access only to few images from its train dataset is [ALL Challenge dataset of ISBI 2019"](https://wiki.cancerimagingarchive.net/pages/viewpage.action?pageId=52758223) (ALL-challenge for short).
 
 ## Method
 In the train phase, train EfficientNetB0 on the AML dataset using AAMSoftmax and consistency loss.
@@ -30,4 +30,21 @@ The base-rate (random guess) accuracy is 50% since the classifier has no access 
 ## More Information & More Results
 More information and more results can found in BloodShot's report.
 
+## How To Run The Code
+Download and unzip the AML dataset and the ALL-Challenge dataset.
+The default unzipped data path is one directory above BloodShot's repo directory, but you can put the data in a different directory and specify the directory using command line arguments. 
+This repo requires a GPU to run, please make sure that you install cuda properly before running this repo.
+
+To train the embedder, please run:
+```
+python run_train.py --train-loop AAMSoftmaxConsistency --experiment-name aam_softmax_consistency_run
+```
+
+To evaluate the embedder, please run:
+```
+python k_shot.py --k 10 --train-loop AAMSoftmaxConsistency --checkpoint-path aam_softmax_consistency_model.ckpt
+```
+You can specify different checkpoints using the ```checkpoint-path``` argument.
+
+## Acknowledgements
 This project was done as a final project in Assaf Zaritsky's [Data Science in Cell Imaging course](https://assafzar.wixsite.com/dsci2022).
