@@ -6,9 +6,6 @@ from sklearn.metrics import classification_report
 from datasets.aml_dataset import AMLDataset
 from utils import dataset_split, get_train_loop_cls_ref
 
-#CHECKPOINT_PATH = 'logs/subcenter_1_arcface_mobilenet_v3_consistency_mult_1_with_logits_with_less_augs/version_0/checkpoints/epoch=5-step=2406_backup.ckpt'
-CHECKPOINT_PATH = 'logs/arcface_again_effnet_consistency_loss/version_11/checkpoints/epoch=5-step=2406.ckpt'
-
 """"
 This file prints the classification report on the test of the AML dataset
 Example for a command:
@@ -54,24 +51,7 @@ def get_arg_parser():
 
 
 if __name__ == '__main__':
-    #model = TrainingLoop.load_from_checkpoint(CHECKPOINT_PATH)
-    #model = TrainingLoopMetricLearning.load_from_checkpoint(CHECKPOINT_PATH)
-    #model = TrainingLoopMetricLearningConsistentLoss.load_from_checkpoint(CHECKPOINT_PATH)
-    # model = TrainingLoopAAMSoftmax.load_from_checkpoint(CHECKPOINT_PATH)
-    #model = TrainingLoopAAMSoftmaxWithLogits.load_from_checkpoint(CHECKPOINT_PATH)
-    #model = FallbackTrainingLoop.load_from_checkpoint(CHECKPOINT_PATH)
-    #model = TrainingLoopMetricLearningConsistentLossArcfaceLoss.load_from_checkpoint(CHECKPOINT_PATH)
-    #model = TrainingLoopSubCenterWithLogitsOutAndConsistent.load_from_checkpoint(CHECKPOINT_PATH)
-    # model = ArcfaceTrainloopAgainConsistencyLoss.load_from_checkpoint(CHECKPOINT_PATH)
-    # model = model.cuda()
-    # model = model.eval()
-    
-    # dataset = AMLDataset('../AML-Cytomorphology/AML-Cytomorphology') 
-    # _, _, test_dataset = dataset_split(dataset)
 
-    # classify_test(model, test_dataset, dataset.num_classes, dataset.lbl_encoder_inverse)
-    
-    
     parser = get_arg_parser()
     args = parser.parse_args()
     train_loop_cls_ref = get_train_loop_cls_ref(args.train_loop)
