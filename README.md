@@ -34,8 +34,8 @@ More information and more results can found in BloodShot's report.
 Download and unzip the AML dataset and the ALL-Challenge dataset.
 The default unzipped data path is one directory above BloodShot's repo directory, but you can put the data in a different directory and specify the directory using command line arguments. 
 This repo requires a GPU to run, please make sure that you install cuda properly before running this repo.
-We used the docker image ```pytorch:1.11.0-cuda11.3-cudnn8-runtime``` as our environment, but any environment (pip or conda) with pytorch 1.11.0 should work. 
-The packages that should be installed on top of the docker image that we used can be found in ```requirements.txt```
+We used the docker image ```pytorch:1.11.0-cuda11.3-cudnn8-runtime``` as our environment, but any python 3.8.12 environment should work.
+The packages that should be installed can be found in ```requirements.txt```
 
 To train the embedder, please run:
 ```
