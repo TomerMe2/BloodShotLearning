@@ -29,4 +29,4 @@ def get_train_loop_cls_ref(train_loop_name):
     elif train_loop_name == 'AAMSoftmaxConsistency':
         return AAMSoftmaxConsistencyLossTrainLoop
     
-    raise Exception('Unkown train loop requested in command line arguemnts')
+    raise Exception('Unknown train loop requested in command line arguemnts')
