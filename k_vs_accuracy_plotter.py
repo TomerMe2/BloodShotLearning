@@ -7,10 +7,6 @@ from datasets.c_nmc_leukemia_dataset import CNmcLeukemiaTrainingDataset, CNmcLeu
 from utils import get_train_loop_cls_ref
 
 
-CHECKPOINT_PATH = 'logs/arcface_again_effnet_consistency_loss/version_11/checkpoints/epoch=5-step=2406.ckpt'
-TRAIN_DATASET_PATH = '../C-NMC-Leukemia/C-NMC_Leukemia/C-NMC_training_data/fold_0'
-TEST_DATASET_PATH = '../C-NMC-Leukemia/C-NMC_Leukemia/C-NMC_test_prelim_phase_data'
-
 KS = [1, 2, 3, 5, 10, 15, 20, 30, 50]
 
 """
@@ -57,13 +53,6 @@ def get_arg_parser():
 
 
 if __name__ == '__main__':
-    # model = ArcfaceTrainloopAgainConsistencyLoss.load_from_checkpoint(CHECKPOINT_PATH)
-    
-    # model = model.backbone.cuda()
-    # model = model.eval()
-
-    # memorizing_dataset = CNmcLeukemiaTrainingDataset(TRAIN_DATASET_PATH)
-    # testing_dataset = CNmcLeukemiaTestingDataset(TEST_DATASET_PATH)
     
     parser = get_arg_parser()
     args = parser.parse_args()
