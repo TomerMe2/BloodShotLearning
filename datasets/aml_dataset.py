@@ -1,7 +1,3 @@
-import torch
-import torchvision
-import numpy as np
-from PIL import Image
 from glob import glob
 from datasets.dataset import Dataset
 
