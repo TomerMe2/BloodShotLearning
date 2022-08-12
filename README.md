@@ -13,8 +13,8 @@ and Non-malignant Controls](https://wiki.cancerimagingarchive.net/pages/viewpage
 The dataset that we will have an access only to few images from its train dataset is [ALL Challenge dataset of ISBI 2019"](https://wiki.cancerimagingarchive.net/pages/viewpage.action?pageId=52758223) (ALL-challenge for short).
 
 ## Method
-In the train phase, train EfficientNetB0 on the AML dataset using AAMSoftmax and consistency loss.
-In the memorize phase, gather k images per class from the training dataset of the ALL Challenge dataset and memorize the mean embedding of each class.
+In the train phase, train EfficientNetB0 on the AML dataset using AAMSoftmax and consistency loss. <br/>
+In the memorize phase, gather k images per class from the training dataset of the ALL Challenge dataset and memorize the mean embedding of each class. <br/>
 In the inference phase, preform a cosine similarity between the embedding of the incoming image and the embedding of each class. We will say that the class of the incoming image is the class of the closest mean embedding.
 
 ## Results
