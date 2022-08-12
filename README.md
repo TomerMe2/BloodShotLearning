@@ -28,7 +28,7 @@ In the inference phase, preform a cosine similarity between the embedding of the
 The base-rate (random guess) accuracy is 50% since the classifier has no access to the distribution of the test dataset because it gets only k examples from each class in the memorize phase.
 
 ## More Information & More Results
-More information and more results can found in BloodShot's report.
+More information and more results can found in [BloodShot's report](https://github.com/TomerMe2/BloodShotLearning/blob/main/BloodShot_report.pdf).
 
 ## How To Run The Code
 Download and unzip the AML dataset and the ALL-Challenge dataset.
