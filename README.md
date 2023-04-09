@@ -23,7 +23,7 @@ In the inference phase, preform a cosine similarity between the embedding of the
 |:-:|:-:|
 | Softmax Loss   | 0.442±0.088 |
 |  AAMSoftmax Loss | 0.590±0.029 |
-| AAMSoftmax Loss & Concictency Loss  | 0.639±0.047 |
+| AAMSoftmax Loss & Consistency Loss  | 0.639±0.047 |
 
 The base-rate (random guess) accuracy is 50% since the classifier has no access to the distribution of the test dataset because it gets only k examples from each class in the memorize phase.
 
@@ -49,4 +49,5 @@ python k_shot.py --k 10 --train-loop AAMSoftmaxConsistency --checkpoint-path aam
 You can specify different checkpoints using the ```checkpoint-path``` argument.
 
 ## Acknowledgements
-This project was done as a final project in Assaf Zaritsky's [Data Science in Cell Imaging course](https://assafzar.wixsite.com/dsci2022).
+This project was done as a final project in Assaf Zaritsky's [Data Science in Cell Imaging course](https://assafzar.wixsite.com/dsci2022). <br/>
+I want to thank [Nadav Gordon-Bar](https://www.linkedin.com/in/nadavgordonbar1986/) for guidance regarding the biological aspects of this project.
